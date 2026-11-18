@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Balokita - Login</title>
+<link rel="icon" href="icon.png">
+<style>
+  :root{--bg:#f4f7f8;--card:#fff;--text:#2c4a52;--sub:#6b8087;--primary:#36555e;
+        --ok:#3f9c72;--warn:#d9822b;--bad:#cf5b5b;--T:#9c8fcc;--S:#7dbaa3;--Z:#e69c80;--O:#e3bf6e;--I:#73b3d1}
+  @media (prefers-color-scheme: dark){:root{--bg:#121619;--card:#1c2226;--text:#e6eef0;--sub:#94a6ab;--primary:#7fb2bf}}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);
+       display:flex;align-items:center;justify-content:center;padding:24px;overflow:hidden}
+  /* balok-balok jatuh di latar */
+  .rain{position:fixed;inset:0;pointer-events:none;z-index:0}
+  .rain i{position:absolute;top:-60px;width:34px;height:34px;border-radius:9px;opacity:.55;
+          box-shadow:inset 0 -4px 0 rgba(0,0,0,.12),inset 0 6px 0 rgba(255,255,255,.35);
+          animation:fall linear infinite}
+  @keyframes fall{to{transform:translateY(calc(100vh + 120px)) rotate(var(--r))}}
+  .card{position:relative;z-index:1;background:var(--card);width:100%;max-width:380px;border-radius:28px;
+        padding:36px 28px 28px;text-align:center;box-shadow:0 18px 50px rgba(20,40,50,.14)}
+  .logo{width:84px;height:84px;border-radius:22px;box-shadow:0 6px 18px rgba(0,0,0,.1)}
+  .brand{letter-spacing:.32em;font-weight:800;font-size:15px;margin:14px 0 22px;color:var(--primary)}
+  .badge{width:72px;height:72px;border-radius:50%;margin:0 auto 18px;display:grid;place-items:center;
+         animation:pop .5s cubic-bezier(.2,1.6,.4,1) both .15s}
+  .badge svg{width:38px;height:38px}
+  @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+  h1{font-size:22px;margin:0 0 8px}
+  p{color:var(--sub);margin:0 0 6px;line-height:1.55;font-size:15px}
+  .en{font-size:13px;opacity:.85;margin-top:2px}
+  .steps{margin:22px 0 4px;padding:14px 16px;background:var(--bg);border-radius:16px;text-align:left;font-size:14px;color:var(--text)}
+  .steps b{color:var(--primary)}
+  button{margin-top:20px;width:100%;border:0;border-radius:18px;padding:16px;font-size:16px;font-weight:700;
+         background:var(--primary);color:#fff;cursor:pointer}
+  button:active{transform:scale(.98)}
+  .foot{margin-top:16px;font-size:12px;color:var(--sub)}
+  .foot a{color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="rain" id="rain"></div>
+
+<main class="card">
+  <img class="logo" src="icon.png" alt="Balokita">
+  <div class="brand">BALOKITA</div>
+
+  <div class="badge" id="badge"></div>
+  <h1 id="title"></h1>
+  <p id="msg"></p>
+  <p class="en" id="msg_en"></p>
+
+  <div class="steps" id="steps">
+    <b>Kembali ke game:</b> tekan tombol <b>Kembali</b> di HP atau buka <b>Balokita</b> dari daftar aplikasi terbaru.
+    Kamu akan masuk otomatis dalam beberapa detik.
+  </div>
+
+  <button id="btn" onclick="closeOrBack()">Tutup halaman ini</button>
+  <div class="foot"><a href="privacy.html">Kebijakan Privasi</a></div>
+</main>
+
+<script>
+  const ICON = {
+    ok:  '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg>',
+    warn:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M12 7v6"/><circle cx="12" cy="17" r="1.2" fill="#fff"/></svg>',
+    bad: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>'
+  };
+  const STATES = {
+    ok:      {icon:'ok',  color:'var(--ok)',   title:'Login berhasil!',
+              msg:'Akun Google-mu sudah terhubung dengan Balokita.',
+              en:'Signed in successfully. Return to Balokita to continue.', steps:true},
+    cancel:  {icon:'warn',color:'var(--warn)', title:'Login dibatalkan',
+              msg:'Kamu belum masuk. Kembali ke Balokita dan ketuk "Masuk dengan Google" lagi.',
+              en:'Sign-in was cancelled. Go back to Balokita and try again.', steps:false},
+    invalid: {icon:'bad', color:'var(--bad)',  title:'Permintaan tidak valid',
+              msg:'Link login ini sudah tidak berlaku. Mulai login lagi dari dalam game.',
+              en:'This sign-in link is no longer valid. Start again from the game.', steps:false},
+    error:   {icon:'bad', color:'var(--bad)',  title:'Gagal menyimpan login',
+              msg:'Terjadi gangguan di server. Kembali ke Balokita dan coba sekali lagi.',
+              en:'Something went wrong on the server. Please try again.', steps:false}
+  };
+  const key = new URLSearchParams(location.search).get('s') || 'ok';
+  const st = STATES[key] || STATES.invalid;
+  const badge = document.getElementById('badge');
+  badge.style.background = st.color;
+  badge.innerHTML = ICON[st.icon];
+  document.getElementById('title').textContent = st.title;
+  document.getElementById('msg').textContent = st.msg;
+  document.getElementById('msg_en').textContent = st.en;
+  if (!st.steps) document.getElementById('steps').style.display = 'none';
+  if (key === 'ok') document.title = 'Balokita - Login berhasil';
+
+  function closeOrBack(){
+    window.close();
+    setTimeout(() => { if (history.length > 1) history.back(); }, 150);
+  }
+
+  // balok jatuh dengan warna khas Balokita
+  const cols = ['--T','--S','--Z','--O','--I'];
+  const rain = document.getElementById('rain');
+  for (let i = 0; i < 14; i++) {
+    const b = document.createElement('i');
+    const s = 22 + Math.random() * 22;
+    b.style.width = b.style.height = s + 'px';
+    b.style.left = (Math.random() * 100) + 'vw';
+    b.style.background = `var(${cols[i % cols.length]})`;
+    b.style.animationDuration = (6 + Math.random() * 7) + 's';
+    b.style.animationDelay = (-Math.random() * 12) + 's';
+    b.style.setProperty('--r', (Math.random() * 180 - 90) + 'deg');
+    rain.appendChild(b);
+  }
+</script>
+</body>
+</html>
